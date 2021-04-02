@@ -29,6 +29,7 @@ namespace apiPlenitude
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<AppDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("ConnectioString")));
+            services.AddControllers().AddNewtonsoftJson();
             services.AddControllers();
             //services.AddSwaggerGen(c =>
             //{
