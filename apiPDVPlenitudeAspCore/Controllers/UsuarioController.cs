@@ -10,11 +10,13 @@ using System.Data;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Web.Http.Cors;
 
 namespace apiPlenitude.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [EnableCors("origins: http://localhost:4200", headers: "*", methods: "*")]
     public class UsuarioController : ControllerBase
     {
         private readonly AppDbContext context;
@@ -39,11 +41,12 @@ namespace apiPlenitude.Controllers
         }
 
         [HttpPost]
-        public Usuarios1 Post(Usuarios1 userParam)
+        [EnableCors(origins: "http://localhost:4200", headers: "*", methods: "*")]
+         public Usuarios1 Post(Usuarios1 userParam)
         {
-            //string json = System.Text.Json.JsonSerializer.Serialize(body);
             var user = AutenticaLogin(userParam.Login, userParam.Senha);
             return user;
+            //return null;
         }
 
         [HttpGet("{id}")]

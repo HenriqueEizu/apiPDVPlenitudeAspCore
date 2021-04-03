@@ -13,6 +13,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.Cors;
+using System.Web.Http.Cors;
 
 namespace apiPlenitude
 {
@@ -30,11 +32,24 @@ namespace apiPlenitude
         {
             services.AddDbContext<AppDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("ConnectioString")));
             services.AddControllers().AddNewtonsoftJson();
+            //services.AddCors();
             services.AddControllers();
             //services.AddSwaggerGen(c =>
             //{
             //    c.SwaggerDoc("v1", new OpenApiInfo { Title = "apiPlenitude", Version = "v1" });
             //});
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy(name: "CorsPolicy",
+                    builder => builder.WithOrigins("http://localhost:4200")
+                                      .WithHeaders("accept", "content-type", "origin")
+                                      .WithMethods("PUT", "DELETE", "GET", "OPTIONS", "POST")
+                                      .AllowAnyHeader()
+                    );
+            });
+
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -47,7 +62,13 @@ namespace apiPlenitude
                 //app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "apiPlenitude v1"));
             }
 
-            app.UseHttpsRedirection();
+            app.UseRouting();
+
+            app.UseCors("CorsPolicy");
+
+            app.UseAuthorization();
+
+            //app.UseHttpsRedirection();
 
             app.UseRouting();
 
@@ -57,6 +78,10 @@ namespace apiPlenitude
             {
                 endpoints.MapControllers();
             });
+
+            //app.UseCors();
+
+  
         }
     }
 }
