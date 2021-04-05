@@ -49,6 +49,13 @@ namespace apiPlenitude.Controllers
             //return null;
         }
 
+        [HttpPost("Listaclientes")]
+        public List<Usuarios1> Listaclientes()
+        {
+
+            return null;
+        }
+
         [HttpGet("{id}")]
         public Usuarios1 Get(int id)
         {
