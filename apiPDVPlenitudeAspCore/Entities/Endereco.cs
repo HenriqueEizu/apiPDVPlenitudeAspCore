@@ -8,6 +8,9 @@ namespace apiPlenitude.Entities
     public class Endereco
     {
         public int IdEndereco { get; set; }
+
+        public int IdPessoaEndereco { get; set; }
+        
         public string Logradouro { get; set; }
         public string Numero { get; set; }
         public string Complemento { get; set; }
@@ -17,6 +20,7 @@ namespace apiPlenitude.Entities
         public string CodPais { get; set; }
         public string UF { get; set; }
         public string CEP { get; set; }
+        public string IndTipoEndereco { get; set; }
         public string PontoReferencia { get; set; }
     }
 }

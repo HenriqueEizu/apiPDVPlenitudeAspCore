@@ -8,7 +8,7 @@ namespace apiPlenitude.Entities
     public class Pessoa
     {
         public int IdPessoa { get; set; }
-        public Telefone lstTelefone { get; set; }
+        public string lstTelefone { get; set; }
         public int IdPessoaEndereco { get; set; }
         public Endereco OBJ_ENDERECO { get; set; }
         public string IndFisJur { get; set; }
