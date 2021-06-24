@@ -11,6 +11,8 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web.Http.Cors;
+using Microsoft.AspNetCore.Authorization;
+using apiPlenitude.Services;
 
 namespace apiPlenitude.Controllers
 {
@@ -41,6 +43,7 @@ namespace apiPlenitude.Controllers
         }
 
         [HttpPost]
+        [AllowAnonymous]
         [EnableCors(origins: "http://localhost:4200", headers: "*", methods: "*")]
          public Usuarios1 Post(Usuarios1 userParam)
         {
@@ -64,6 +67,7 @@ namespace apiPlenitude.Controllers
             return usuario;
         }
 
+        [AllowAnonymous]
         public Usuarios1 AutenticaLogin( string strLogin,  string strSenha)
         {
             Usuarios1 userResult = null;
@@ -110,17 +114,14 @@ namespace apiPlenitude.Controllers
 
                     if (Convert.ToBoolean(cmd.Parameters["@Ok"].Value) == true)
                     {
+                        
                         userResult = new Usuarios1();
                         userResult.Id_Usr = Convert.ToInt32(cmd.Parameters["@Id_Usr"].Value);
                         userResult.Login = strLogin;
                         userResult.Usuario = cmd.Parameters["@Usuario"].Value.ToString();
                         userResult.FlAtivo = true;
-                    }
-                    else
-                    {
-                        userResult = new Usuarios1();
-                        userResult.Usuario = cmd.Parameters["@MensErro"].Value.ToString();
-                        return userResult;
+                        var token = TokenServices.GenerateToken(userResult);
+                        userResult.Token = token;
                     }
 
                 }
@@ -128,6 +129,7 @@ namespace apiPlenitude.Controllers
             return userResult;
         }
 
+        
         public List< Usuarios1>GetUsuarios() 
         {
             List<Usuarios1> lstusuarios = new List<Usuarios1>();

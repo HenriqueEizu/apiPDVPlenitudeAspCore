@@ -18,5 +18,7 @@ namespace apiPlenitude.Entities
         public DateTime? DtVencSenha { get; set; }
 
         public string? IdEMail { get; set; }
+
+        public string Token { get; set; }
     }
 }

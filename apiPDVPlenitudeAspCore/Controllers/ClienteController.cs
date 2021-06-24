@@ -1,5 +1,6 @@
 ﻿using apiPlenitude.Context;
 using apiPlenitude.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
@@ -9,6 +10,8 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http.Cors;
+using System.Xml.Linq;
+using System.Xml.Serialization;
 
 namespace apiPlenitude.Controllers
 {
@@ -36,6 +39,7 @@ namespace apiPlenitude.Controllers
        
         [HttpGet("GetAllClientes")]
         [Route("{campo}/{criterio}")]
+        [Authorize(AuthenticationSchemes = "Bearer")]
         public List<Cliente> GetAllClientes([FromQuery] string campo, [FromQuery] string criterio)
         {
             List<Cliente> lstusuarios = new List<Cliente>();
@@ -89,6 +93,52 @@ namespace apiPlenitude.Controllers
             return lstusuarios;
         }
 
+        [HttpGet("GetClienteCPF")]
+        [Route("{id}")]
+        [EnableCors(origins: "http://localhost:4200", headers: "*", methods: "*")]
+        public Cliente GetClienteCPF([FromQuery] string id)
+        {
+            List<Cliente> lstusuarios = new List<Cliente>();
+            Cliente cliente = null;
+            Pessoa pessoa = null;
+            string strSql = null;
+            using (SqlConnection con = new SqlConnection())
+            {
+                con.ConnectionString = Configuration.GetConnectionString("ConnectioString");
+                con.Open();
+                using (SqlCommand cmd = new SqlCommand())
+                {
+                    cmd.Connection = con;
+
+
+                    strSql = "  SELECT  C.ID_CLI, P.NOME, P.CNPJCPF, P.IESTRG, P.INDFISJUR , PE.IdEndereco, PE.IndTipoEndereco ";
+                    strSql += " FROM	CLIENTE C ";
+                    strSql += " JOIN	PESSOA P ON C.IDPESSOA = P.IDPESSOA ";
+                    strSql += " JOIN    PessoaEndereco PE ON PE.IdPessoa = P.IdPessoa ";
+                    strSql += " WHERE   P.CNPJCPF = '" + id + "'";
+
+                    cmd.CommandText = strSql;
+
+                    SqlDataReader rd = cmd.ExecuteReader();
+                    while (rd.Read())
+                    {
+                        cliente = new Cliente();
+                        pessoa = new Pessoa();
+                        cliente.Id_Cli = Convert.ToInt32(rd["ID_CLI"]);
+                        pessoa.CnpjCpf = rd["CNPJCPF"].ToString();
+                        pessoa.IEstRG = rd["IESTRG"].ToString();
+                        pessoa.IndFisJur = rd["INDFISJUR"].ToString();
+                        pessoa.Nome = rd["NOME"].ToString();
+                        pessoa.IdEndereco = Convert.ToInt32(rd["IdEndereco"]);
+                        cliente.OBJ_PESSOA = pessoa;
+                    }
+                    con.Close();
+                }
+            }
+
+            return cliente;
+        }
+
 
         [HttpGet("GetIdCliente")]
         [Route("{id}")]
@@ -135,7 +185,7 @@ namespace apiPlenitude.Controllers
 
                         cliente.Id_Cli = Convert.ToInt32(rd["Id_Cli"]);
                         cliente.ProfProfissao = rd["ProfProfissao"].ToString();
-                        cliente.Contato = rd["ProfProfissao"].ToString();
+                        cliente.Contato = rd["Contato"].ToString();
                         pessoa.CnpjCpf = rd["CNPJCPF"].ToString();
                         pessoa.IEstRG = rd["IESTRG"].ToString();
                         pessoa.IndFisJur = rd["INDFISJUR"].ToString();
@@ -146,8 +196,8 @@ namespace apiPlenitude.Controllers
                         pessoa.EstCivil = rd["EstCivil"].ToString();
                         pessoa.DtNascimento = Convert.ToDateTime(rd["DtNascimento"]);
                         pessoa.DhIns = Convert.ToDateTime(rd["DhIns"]);
-                        pessoa.IdPessoaEndereco = Convert.ToInt32(rd["IdPessoaEndereco"]);
-                        //pessoa.IdEndereco = rd["CNPJCPF"].ToString();
+                        pessoa.IdPessoaEndereco = Convert.ToInt32(rd["IdPessoaEndereco"] == null ? 0 : rd["IdPessoaEndereco"]);
+                        pessoa.IdEndereco = Convert.ToInt32(rd["IdEndereco"]);
                         pessoa.EMail = rd["EMail"].ToString();
                         endereco.CEP = rd["CEP"].ToString();
                         endereco.UF = rd["UF"].ToString();
@@ -188,7 +238,7 @@ namespace apiPlenitude.Controllers
                     cmd.Connection = con;
 
 
-                    strSql = " SELECT  F.IdTelefone, F.CodDdd as DDD ,F.Numero, F.Ramal, F.IndTipoFone";
+                    strSql = " SELECT  F.IdTelefone, F.CodDdd as DDD ,F.Numero, F.Ramal, F.IndTipoFone, F.CodDdi";
                     strSql += " FROM	CLIENTE C ";
                     strSql += " JOIN	PESSOA P ON C.IDPESSOA = P.IDPESSOA ";
                     strSql += " JOIN    PessoaEndereco PE ON PE.IdPessoa = P.IdPessoa ";
@@ -209,6 +259,7 @@ namespace apiPlenitude.Controllers
                         fone.Numero = (rd["Numero"]).ToString();
                         fone.Ramal = (rd["Ramal"]).ToString();
                         fone.IndTipoFone = (rd["IndTipoFone"]).ToString();
+                        fone.CodDdi = (rd["CodDdi"]).ToString();
 
                         lstTelefone.Add(fone);
                     }
@@ -337,13 +388,184 @@ namespace apiPlenitude.Controllers
             return lstestados;
         }
 
+        private System.IO.StringWriter FormatarListaTelefone(string lstTelefone)
+        {
+            string[] strTelefone = null;
+            Telefone fone = null;
+            List<Telefone> lstTelefoneResult = new List<Telefone>();
+            strTelefone = lstTelefone.Split("[");
+            for (int i = 1; i <= strTelefone.Length - 1; i++ )
+            {
+                string[] strProp = strTelefone[i].Split(",");
+                fone = new Telefone();
+                fone.CodDdd = strProp[0];
+                fone.CodDdi = strProp[1];
+                fone.IdTelefone = Convert.ToInt32(strProp[2]);
+                fone.IndTipoFone = strProp[3];
+                fone.Numero = strProp[4];
+                fone.Ramal = strProp[5];
+                lstTelefoneResult.Add(fone);
+            }
+
+            XmlSerializer serializer = new XmlSerializer(typeof(List<Telefone>));
+
+            var stringwriter = new System.IO.StringWriter();
+            serializer.Serialize(stringwriter, lstTelefoneResult);
+
+            return stringwriter;
+        }
+
+        [HttpPost("InserirCliente")]
+        [EnableCors(origins: "http://localhost:4200", headers: "*", methods: "*")]
+        public bool InserirCliente(Cliente cliente)
+        {
+            string strLista = null;
+            if (cliente.OBJ_PESSOA.lstTelefone != null && cliente.OBJ_PESSOA.lstTelefone != "")
+            {
+                strLista = FormatarListaTelefone(cliente.OBJ_PESSOA.lstTelefone).ToString();
+            }
+            cliente.Id_Cli = null;
+            SqlTransaction tran = null;
+            using (SqlConnection con = new SqlConnection(Configuration.GetConnectionString("ConnectioString")))
+            {
+                con.Open();
+                tran = con.BeginTransaction();
+                using (SqlCommand cmd = new SqlCommand("Sp_ClienteGrava", con, tran))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    //cmd.Parameters.Add("@Id_Cli", SqlDbType.Int).Value = cliente.Id_Cli;
+                    //cmd.Parameters.Add("@IdPessoa", SqlDbType.Int).Value = cliente.IdPessoa;
+                    cmd.Parameters.Add("@IndFisJur", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.IndFisJur;
+                    cmd.Parameters.Add("@Nome", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.Nome;
+                    cmd.Parameters.Add("@Apelido", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.Apelido;
+                    cmd.Parameters.Add("@CnpjCpf", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.CnpjCpf;
+                    cmd.Parameters.Add("@IEstRG", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.IEstRG;
+                    cmd.Parameters.Add("@OrgEmisRg", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.OrgEmisRg;
+                    cmd.Parameters.Add("@DtEmisRg", SqlDbType.DateTime).Value = DateTime.Now;
+                    cmd.Parameters.Add("@DtNascimento", SqlDbType.DateTime).Value = cliente.OBJ_PESSOA.DtNascimento;
+                    cmd.Parameters.Add("@EstCivil", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.EstCivil;
+                    cmd.Parameters.Add("@EMail", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.EMail;
+                    cmd.Parameters.Add("@HomePage", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.HomePage == null ? "" : "";
+                    cmd.Parameters.Add("@Natural", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.Natural == null ? "" : cliente.OBJ_PESSOA.Natural;
+
+                    cmd.Parameters.Add("@Contato", SqlDbType.VarChar).Value = cliente.Contato == null ? "" : cliente.Contato;
+                    cmd.Parameters.Add("@ProfEmpresa", SqlDbType.VarChar).Value = cliente.ProfEmpresa == null ? "" : cliente.ProfEmpresa;
+                    cmd.Parameters.Add("@ProfCargo", SqlDbType.VarChar).Value = cliente.ProfCargo == null ? "" : cliente.ProfCargo;
+                    cmd.Parameters.Add("@ProfProfissao", SqlDbType.VarChar).Value = cliente.ProfProfissao == null ? "" : cliente.ProfProfissao;
+                    cmd.Parameters.Add("@ProfSalario", SqlDbType.Int).Value = cliente.ProfSalario == 0 ? 0 : cliente.ProfSalario;
+                    cmd.Parameters.Add("@ProfDtAdmissao", SqlDbType.DateTime).Value = DateTime.Now;
+                    cmd.Parameters.Add("@BanCodBanco", SqlDbType.VarChar).Value = cliente.BanCodBanco == null ? "" : cliente.BanCodBanco;
+                    cmd.Parameters.Add("@BanNomeBanco", SqlDbType.VarChar).Value = cliente.BanNomeBanco == null ? "" : cliente.BanNomeBanco;
+                    cmd.Parameters.Add("@BanDtInicioBanco", SqlDbType.DateTime).Value = DateTime.Now;
+                    cmd.Parameters.Add("@BanAgencia", SqlDbType.VarChar).Value = cliente.BanAgencia == null ? "" : cliente.BanAgencia;
+                    cmd.Parameters.Add("@BanNumConta", SqlDbType.VarChar).Value = cliente.BanNumConta == null ? "" : cliente.BanNumConta;
+                    cmd.Parameters.Add("@BanChequeEspecial", SqlDbType.Bit).Value = cliente.BanChequeEspecial;
+                    cmd.Parameters.Add("@IdUsuario", SqlDbType.Int).Value = cliente.IdUsuario;
+
+                    SqlParameter Id_CliOut = new SqlParameter();
+                    Id_CliOut.ParameterName = "@Id_Cli";
+                    Id_CliOut.SqlDbType = System.Data.SqlDbType.Int;
+                    Id_CliOut.Direction = System.Data.ParameterDirection.Output;
+                    cmd.Parameters.Add(Id_CliOut);
+
+                    SqlParameter IdPessoaOut = new SqlParameter();
+                    IdPessoaOut.ParameterName = "@IdPessoa";
+                    IdPessoaOut.SqlDbType = System.Data.SqlDbType.Int;
+                    IdPessoaOut.Direction = System.Data.ParameterDirection.Output;
+                    cmd.Parameters.Add(IdPessoaOut);
+
+                    //Add the output parameter to the command object
+                    SqlParameter Id_OkOut = new SqlParameter();
+                    Id_OkOut.ParameterName = "@Ok";
+                    Id_OkOut.SqlDbType = System.Data.SqlDbType.VarChar;
+                    Id_OkOut.Size = 30;
+                    Id_OkOut.Direction = System.Data.ParameterDirection.Output;
+                    cmd.Parameters.Add(Id_OkOut);
+
+                    SqlParameter MensErroOut = new SqlParameter();
+                    MensErroOut.ParameterName = "@MensErro";
+                    MensErroOut.SqlDbType = System.Data.SqlDbType.VarChar;
+                    MensErroOut.Size = 500;
+                    MensErroOut.Direction = System.Data.ParameterDirection.Output;
+                    cmd.Parameters.Add(MensErroOut);
+
+
+                    try
+                    {
+                        cmd.ExecuteNonQuery();
+                        if (cmd.Parameters["@Ok"].Value.ToString() == "1")
+                        {
+                            tran.Commit();
+                            con.Close();
+                            cliente.OBJ_PESSOA.IdPessoa = Convert.ToInt32(cmd.Parameters["@IdPessoa"].Value);
+                            cliente.OBJ_PESSOA.IdPessoaEndereco = null;
+
+
+                            if (AlteraEndereco(cliente))
+                            {
+                                return true;
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException(cmd.Parameters["@MensErro"].Value.ToString());
+                            }
+                        }
+                        else
+                        {
+                            tran.Rollback();
+                            throw new InvalidOperationException(cmd.Parameters["@MensErro"].Value.ToString());
+                        }
+
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException(cmd.Parameters["@MensErro"].Value.ToString());
+                    }
+
+                }
+            }
+        }
+
+        private int ConsultaIdPessoa()
+        {
+            using (SqlConnection con = new SqlConnection())
+            {
+                int idPessoResult = 0;
+                con.ConnectionString = Configuration.GetConnectionString("ConnectioString");
+                con.Open();
+                using (SqlCommand cmd = new SqlCommand())
+                {
+                    cmd.Connection = con;
+
+
+                    string strSql = "SELECT MAX(IdPessoa) as IdPessoa from CLIENTE ";
+
+                    cmd.CommandText = strSql;
+
+                    SqlDataReader rd = cmd.ExecuteReader();
+                    while (rd.Read())
+                    {
+                        idPessoResult = Convert.ToInt32(rd["IdPessoa"]);
+                    }
+                    con.Close();
+                }
+                return idPessoResult;
+            }
+        }
+
         [HttpPut("AlterarCliente")]
         [EnableCors(origins: "http://localhost:4200", headers: "*", methods: "*")]
         public bool  AlterarCliente(Cliente cliente)
         {
+            string strLista = null;
+            if (cliente.OBJ_PESSOA.lstTelefone != null && cliente.OBJ_PESSOA.lstTelefone != "")
+            {
+                strLista = FormatarListaTelefone(cliente.OBJ_PESSOA.lstTelefone).ToString();
+            }
             SqlTransaction tran = null;
             using (SqlConnection con = new SqlConnection(Configuration.GetConnectionString("ConnectioString")))
             {
+                con.Open();
                 tran = con.BeginTransaction();
                 using (SqlCommand cmd = new SqlCommand("Sp_ClienteGrava", con,tran))
                 {
@@ -356,24 +578,24 @@ namespace apiPlenitude.Controllers
                     cmd.Parameters.Add("@CnpjCpf", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.CnpjCpf;
                     cmd.Parameters.Add("@IEstRG", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.IEstRG;
                     cmd.Parameters.Add("@OrgEmisRg", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.OrgEmisRg;
-                    cmd.Parameters.Add("@DtEmisRg", SqlDbType.DateTime).Value = cliente.OBJ_PESSOA.DtEmisRg;
+                    cmd.Parameters.Add("@DtEmisRg", SqlDbType.DateTime).Value = DateTime.Now;
                     cmd.Parameters.Add("@DtNascimento", SqlDbType.DateTime).Value = cliente.OBJ_PESSOA.DtNascimento;
                     cmd.Parameters.Add("@EstCivil", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.EstCivil;
                     cmd.Parameters.Add("@EMail", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.EMail;
-                    cmd.Parameters.Add("@HomePage", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.HomePage;
-                    cmd.Parameters.Add("@Natural", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.Natural;
+                    cmd.Parameters.Add("@HomePage", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.HomePage == null ? "" : "";
+                    cmd.Parameters.Add("@Natural", SqlDbType.VarChar).Value = cliente.OBJ_PESSOA.Natural == null ? "" : cliente.OBJ_PESSOA.Natural;
 
-                    cmd.Parameters.Add("@Contato", SqlDbType.VarChar).Value = cliente.Contato;
-                    cmd.Parameters.Add("@ProfEmpresa", SqlDbType.VarChar).Value = cliente.ProfEmpresa;
-                    cmd.Parameters.Add("@ProfCargo", SqlDbType.VarChar).Value = cliente.ProfCargo;
-                    cmd.Parameters.Add("@ProfProfissao", SqlDbType.VarChar).Value = cliente.ProfProfissao;
-                    cmd.Parameters.Add("@ProfSalario", SqlDbType.Int).Value = cliente.ProfSalario;
-                    cmd.Parameters.Add("@ProfDtAdmissao", SqlDbType.DateTime).Value = cliente.ProfDtAdmissao;
-                    cmd.Parameters.Add("@BanCodBanco", SqlDbType.VarChar).Value = cliente.BanCodBanco;
-                    cmd.Parameters.Add("@BanNomeBanco", SqlDbType.VarChar).Value = cliente.BanNomeBanco;
-                    cmd.Parameters.Add("@BanDtInicioBanco", SqlDbType.DateTime).Value = cliente.BanDtInicioBanco;
-                    cmd.Parameters.Add("@BanAgencia", SqlDbType.VarChar).Value = cliente.BanAgencia;
-                    cmd.Parameters.Add("@BanNumConta", SqlDbType.VarChar).Value = cliente.BanNumConta;
+                    cmd.Parameters.Add("@Contato", SqlDbType.VarChar).Value = cliente.Contato == null ? "" : cliente.Contato;
+                    cmd.Parameters.Add("@ProfEmpresa", SqlDbType.VarChar).Value = cliente.ProfEmpresa == null ? "" : cliente.ProfEmpresa;
+                    cmd.Parameters.Add("@ProfCargo", SqlDbType.VarChar).Value = cliente.ProfCargo == null ? "" : cliente.ProfCargo;
+                    cmd.Parameters.Add("@ProfProfissao", SqlDbType.VarChar).Value = cliente.ProfProfissao == null ? "" : cliente.ProfProfissao;
+                    cmd.Parameters.Add("@ProfSalario", SqlDbType.Int).Value = cliente.ProfSalario == 0 ? 0 : cliente.ProfSalario;
+                    cmd.Parameters.Add("@ProfDtAdmissao", SqlDbType.DateTime).Value = DateTime.Now;
+                    cmd.Parameters.Add("@BanCodBanco", SqlDbType.VarChar).Value = cliente.BanCodBanco == null ? "" : cliente.BanCodBanco;
+                    cmd.Parameters.Add("@BanNomeBanco", SqlDbType.VarChar).Value = cliente.BanNomeBanco == null ? "" : cliente.BanNomeBanco;
+                    cmd.Parameters.Add("@BanDtInicioBanco", SqlDbType.DateTime).Value = DateTime.Now;
+                    cmd.Parameters.Add("@BanAgencia", SqlDbType.VarChar).Value = cliente.BanAgencia == null ? "" : cliente.BanAgencia;
+                    cmd.Parameters.Add("@BanNumConta", SqlDbType.VarChar).Value = cliente.BanNumConta == null ? "" : cliente.BanNumConta;
                     cmd.Parameters.Add("@BanChequeEspecial", SqlDbType.Bit).Value = cliente.BanChequeEspecial;
                     cmd.Parameters.Add("@IdUsuario", SqlDbType.Int).Value = cliente.IdUsuario;
 
@@ -393,89 +615,108 @@ namespace apiPlenitude.Controllers
                     MensErroOut.Direction = System.Data.ParameterDirection.Output;
                     cmd.Parameters.Add(MensErroOut);
 
-                    con.Open();
+                    
 
                     try
                     {
                         cmd.ExecuteNonQuery();
-                        if (Convert.ToBoolean(cmd.Parameters["@Ok"].Value) == true)
+                        if (cmd.Parameters["@Ok"].Value.ToString() == "1")
                         {
-                            if (AlteraEndereco(con, cliente))
+                            tran.Commit();
+                            con.Close();
+                            if (AlteraEndereco(cliente))
                             {
-                                tran.Commit();
                                 return true;
                             }
                             else
                             {
-                                tran.Rollback();
-                                return false;
+                                throw new InvalidOperationException(cmd.Parameters["@MensErro"].Value.ToString());
                             }
                         }
                         else
                         {
                             tran.Rollback();
-                            return false;
+                            throw new InvalidOperationException(cmd.Parameters["@MensErro"].Value.ToString());
                         }
 
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        tran.Rollback();
-                        return false;
+                        throw new InvalidOperationException(cmd.Parameters["@MensErro"].Value.ToString());
                     }
 
                 }
             }
         }
 
-        bool AlteraEndereco(SqlConnection con, Cliente cli)
+        bool AlteraEndereco(Cliente cli)
         {
-            using (SqlCommand cmd = new SqlCommand("Sp_PessoaEnderecoGrava", con))
+            using (SqlConnection con = new SqlConnection(Configuration.GetConnectionString("ConnectioString")))
             {
-                cmd.CommandType = CommandType.StoredProcedure;
-
-                cmd.Parameters.Add("@IdPessoaEndereco", SqlDbType.Int).Value = cli.OBJ_PESSOA.IdPessoaEndereco;
-                cmd.Parameters.Add("@IdPessoa", SqlDbType.Int).Value = cli.OBJ_PESSOA.IdPessoa;
-                cmd.Parameters.Add("@IdEndereco", SqlDbType.Int).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.IdEndereco;
-                cmd.Parameters.Add("@IndTipoEndereco", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.IndTipoEndereco;
-                cmd.Parameters.Add("@Logradouro", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.Logradouro;
-                cmd.Parameters.Add("@Numero", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.Numero;
-                cmd.Parameters.Add("@Complemento", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.Complemento;
-                cmd.Parameters.Add("@Bairro", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.Bairro;
-                cmd.Parameters.Add("@Localidade", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.Localidade;
-                cmd.Parameters.Add("@CodMuni", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.CodMuni;
-                cmd.Parameters.Add("@UF", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.UF;
-                cmd.Parameters.Add("@CEP", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.CEP;
-                cmd.Parameters.Add("@CodPais", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.CodPais;
-                cmd.Parameters.Add("@PontoReferencia", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.PontoReferencia;
-
-                //Add the output parameter to the command object
-                SqlParameter Id_OkOut = new SqlParameter();
-                Id_OkOut.ParameterName = "@Ok";
-                Id_OkOut.SqlDbType = System.Data.SqlDbType.VarChar;
-                Id_OkOut.Size = 30;
-                Id_OkOut.Direction = System.Data.ParameterDirection.Output;
-                cmd.Parameters.Add(Id_OkOut);
-
-                SqlParameter MensErroOut = new SqlParameter();
-                MensErroOut.ParameterName = "@MensErro";
-                MensErroOut.SqlDbType = System.Data.SqlDbType.VarChar;
-                MensErroOut.Size = 500;
-                MensErroOut.Direction = System.Data.ParameterDirection.Output;
-                cmd.Parameters.Add(MensErroOut);
-
-                con.Open();
-
-                try
+                using (SqlCommand cmd = new SqlCommand("Sp_PessoaEnderecoGrava", con))
                 {
-                    cmd.ExecuteNonQuery();
-                    return true;
-                }
-                catch (Exception)
-                {
-                    return false;
-                }
+                    cmd.CommandType = CommandType.StoredProcedure;
 
+                    //cmd.Parameters.Add("@IdPessoaEndereco", SqlDbType.Int).Value = cli.OBJ_PESSOA.IdPessoaEndereco;
+                    cmd.Parameters.Add("@IdPessoa", SqlDbType.Int).Value = cli.OBJ_PESSOA.IdPessoa;
+                    cmd.Parameters.Add("@IdEndereco", SqlDbType.Int).Value = cli.OBJ_PESSOA.IdEndereco == null ? 0 : cli.OBJ_PESSOA.IdEndereco;
+                    cmd.Parameters.Add("@IndTipoEndereco", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.IndTipoEndereco == null ? "CAD" : cli.OBJ_PESSOA.OBJ_ENDERECO.IndTipoEndereco;
+                    cmd.Parameters.Add("@Logradouro", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.Logradouro == null ? "" : cli.OBJ_PESSOA.OBJ_ENDERECO.Logradouro; 
+                    cmd.Parameters.Add("@Numero", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.Numero == null ? "" : cli.OBJ_PESSOA.OBJ_ENDERECO.Numero; 
+                    cmd.Parameters.Add("@Complemento", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.Complemento == null ? "" : cli.OBJ_PESSOA.OBJ_ENDERECO.Complemento;
+                    cmd.Parameters.Add("@Bairro", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.Bairro == null ? "" : cli.OBJ_PESSOA.OBJ_ENDERECO.Bairro;
+                    cmd.Parameters.Add("@Localidade", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.Localidade == null ? "" : cli.OBJ_PESSOA.OBJ_ENDERECO.Localidade;
+                    cmd.Parameters.Add("@CodMuni", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.CodMuni == null ? "" : cli.OBJ_PESSOA.OBJ_ENDERECO.CodMuni;
+                    cmd.Parameters.Add("@UF", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.UF == null ? "" : cli.OBJ_PESSOA.OBJ_ENDERECO.UF;
+                    cmd.Parameters.Add("@CEP", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.CEP == null ? "" : cli.OBJ_PESSOA.OBJ_ENDERECO.CEP;
+                    cmd.Parameters.Add("@CodPais", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.CodPais == null ? "" : cli.OBJ_PESSOA.OBJ_ENDERECO.CodPais;
+                    cmd.Parameters.Add("@PontoReferencia", SqlDbType.VarChar).Value = cli.OBJ_PESSOA.OBJ_ENDERECO.PontoReferencia == null ? "" : cli.OBJ_PESSOA.OBJ_ENDERECO.PontoReferencia;
+
+                    
+
+                    SqlParameter IdPessoaEnderecoOut = new SqlParameter();
+                    IdPessoaEnderecoOut.ParameterName = "@IdPessoaEndereco";
+                    IdPessoaEnderecoOut.SqlDbType = System.Data.SqlDbType.Int;
+                    IdPessoaEnderecoOut.Value = cli.OBJ_PESSOA.IdPessoaEndereco;
+                    IdPessoaEnderecoOut.Direction = System.Data.ParameterDirection.InputOutput;
+                    cmd.Parameters.Add(IdPessoaEnderecoOut);
+
+                    //Add the output parameter to the command object
+                    SqlParameter Id_OkOut = new SqlParameter();
+                    Id_OkOut.ParameterName = "@Ok";
+                    Id_OkOut.SqlDbType = System.Data.SqlDbType.VarChar;
+                    Id_OkOut.Size = 30;
+                    Id_OkOut.Direction = System.Data.ParameterDirection.Output;
+                    cmd.Parameters.Add(Id_OkOut);
+
+                    SqlParameter MensErroOut = new SqlParameter();
+                    MensErroOut.ParameterName = "@MensErro";
+                    MensErroOut.SqlDbType = System.Data.SqlDbType.VarChar;
+                    MensErroOut.Size = 500;
+                    MensErroOut.Direction = System.Data.ParameterDirection.Output;
+                    cmd.Parameters.Add(MensErroOut);
+
+
+                    try
+                    {
+                        con.Open();
+                        cmd.ExecuteNonQuery();
+                        if (cmd.Parameters["@Ok"].Value.ToString() == "1")
+                        {
+                            return true;
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException(cmd.Parameters["@MensErro"].Value.ToString());
+                        }
+                            
+                    }
+                    catch (Exception ex)
+                    {
+                        return false;
+                    }
+
+                }
             }
         }
     }

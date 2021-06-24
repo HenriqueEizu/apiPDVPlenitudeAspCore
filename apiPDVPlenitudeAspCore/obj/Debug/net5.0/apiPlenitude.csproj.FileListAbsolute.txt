@@ -69,6 +69,10 @@ C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlen
 C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\bin\Debug\net5.0\System.Net.Http.Formatting.dll
 C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\bin\Debug\net5.0\System.Web.Http.dll
 C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\bin\Debug\net5.0\System.Web.Http.Cors.dll
+C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\bin\Debug\net5.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\bin\Debug\net5.0\Microsoft.AspNetCore.Cryptography.Internal.dll
+C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\bin\Debug\net5.0\Microsoft.AspNetCore.Cryptography.KeyDerivation.dll
+C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\bin\Debug\net5.0\Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
 C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\bin\Debug\net5.0\Microsoft.AspNetCore.JsonPatch.dll
 C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\bin\Debug\net5.0\Microsoft.AspNetCore.Mvc.NewtonsoftJson.dll
 C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\bin\Debug\net5.0\Microsoft.Data.SqlClient.dll
@@ -79,6 +83,8 @@ C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlen
 C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\bin\Debug\net5.0\Microsoft.EntityFrameworkCore.SqlServer.dll
 C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\bin\Debug\net5.0\Microsoft.Extensions.DependencyInjection.dll
 C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\bin\Debug\net5.0\Microsoft.Extensions.DependencyModel.dll
+C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\bin\Debug\net5.0\Microsoft.Extensions.Identity.Core.dll
+C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\bin\Debug\net5.0\Microsoft.Extensions.Identity.Stores.dll
 C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\bin\Debug\net5.0\Microsoft.Identity.Client.dll
 C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\bin\Debug\net5.0\Microsoft.IdentityModel.JsonWebTokens.dll
 C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\bin\Debug\net5.0\Microsoft.IdentityModel.Logging.dll
@@ -123,3 +129,4 @@ C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlen
 C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\obj\Debug\net5.0\ref\apiPlenitude.dll
 C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\obj\Debug\net5.0\apiPlenitude.pdb
 C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\obj\Debug\net5.0\apiPlenitude.genruntimeconfig.cache
+C:\Users\h_eiz\Documents\apiPdvPenitudeNetCore\apiPDVPlenitudeAspCore\apiPDVPlenitudeAspCore\obj\Debug\net5.0\apiPlenitude.csprojAssemblyReference.cache

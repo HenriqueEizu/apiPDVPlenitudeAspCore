@@ -15,6 +15,11 @@ using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Cors;
 using System.Web.Http.Cors;
+using apiPlenitude.Entities;
+using Microsoft.AspNetCore.Identity;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 namespace apiPlenitude
 {
@@ -30,6 +35,7 @@ namespace apiPlenitude
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+
             services.AddDbContext<AppDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("ConnectioString")));
             services.AddControllers().AddNewtonsoftJson();
             //services.AddCors();
@@ -49,6 +55,24 @@ namespace apiPlenitude
                     );
             });
 
+            var key = Encoding.ASCII.GetBytes(@"afsdkjasjflxswafsdklk434orqiwup3457u - 34oewir4irroqwiffv48mfs");
+            services.AddAuthentication(x =>
+            {
+                x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(x =>
+            {
+                x.RequireHttpsMetadata = false;
+                x.SaveToken = true;
+                x.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false,
+                    ValidateAudience = false
+                };
+            });   
 
         }
 
@@ -73,6 +97,7 @@ namespace apiPlenitude
             app.UseRouting();
 
             app.UseAuthorization();
+            app.UseAuthentication();
 
             app.UseEndpoints(endpoints =>
             {

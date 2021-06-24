@@ -8,7 +8,7 @@ namespace apiPlenitude.Entities
     public class Cliente
     {
        public int IdCliente { get; set; }
-       public int Id_Cli { get; set; }
+       public int? Id_Cli { get; set; }
         public int Id_Cli_Lj { get; set; }
         public int IdPessoa { get; set; }
         public Pessoa OBJ_PESSOA { get; set; }
