@@ -30,7 +30,7 @@ namespace apiPlenitude.Controllers
         [HttpGet("GetAllPedidos")]
         [Route("{campo}/{criterio}")]
         [Authorize(AuthenticationSchemes = "Bearer")]
-        public List<Pedido> GetAllPedidos([FromQuery] string campo, [FromQuery] string criterio)
+        public List<Pedido> GetAllPedidos([FromQuery] string campo, [FromQuery] string criterio, [FromQuery] string integrado)
         {
             List<Pedido> lstPedidos = new List<Pedido>();
             Pedido pedido = null;
@@ -59,6 +59,10 @@ namespace apiPlenitude.Controllers
                             strSql += " WHERE   " + campo + " = " + criterio;
                         else
                             strSql += " WHERE   " + campo + " like  '%" + criterio + "%'";
+
+                        if (integrado != "true")
+                            strSql += " AND Situacao != 4 ";
+
                     }
 
                     else
@@ -295,6 +299,8 @@ namespace apiPlenitude.Controllers
             return lstItensEstoque;
         }
 
+     
+
         [HttpGet("GetItensPedido")]
         [Route("{idpedido}")]
         [Authorize(AuthenticationSchemes = "Bearer")]
@@ -409,9 +415,9 @@ namespace apiPlenitude.Controllers
 
                         Telefone fone = new Telefone();
 
-                        fone.CodDdd = dr["CodDdd"].ToString();
-                        fone.Numero = dr["Numero"].ToString();
-                        fone.Ramal = dr["Ramal"].ToString();
+                        fone.codddd = dr["CodDdd"].ToString();
+                        fone.numero = dr["Numero"].ToString();
+                        fone.ramal = dr["Ramal"].ToString();
 
                         pedido.IdPedido = Convert.ToInt32(dr["IdPedido"].ToString() == "" ? 0 : dr["IdPedido"]);
                         pedido.Id_Ped = Convert.ToInt32(dr["Id_Ped"].ToString() == "" ? 0 : dr["Id_Ped"]);
@@ -435,7 +441,7 @@ namespace apiPlenitude.Controllers
                         pedido.Per_Ent = dr["Per_Ent"].ToString();
                         pedido.TotProd = Convert.ToInt32(dr["TotProd"].ToString() == "" ? 0 : dr["TotProd"]);
                         pedido.Desconto = Convert.ToDecimal(dr["Desconto"].ToString() == "" ? 0 : dr["Desconto"]);
-                        pedido.Desc_Por = Convert.ToInt32(dr["Desc_Por"].ToString() == "" ? 0 : dr["Desc_Por"]);
+                        pedido.Desc_Por = Convert.ToDecimal(dr["Desc_Por"].ToString() == "" ? 0 : dr["Desc_Por"]);
                         pedido.TotPed = Convert.ToDecimal(dr["TotPed"].ToString() == "" ? 0 : dr["Id_Cli"]);
                         pedido.VlFrete = Convert.ToDecimal(dr["VlFrete"].ToString() == "" ? 0 : dr["VlFrete"]);
                         pedido.Val_Afin = Convert.ToDecimal(dr["Val_Afin"].ToString() == "" ? 0 : dr["Val_Afin"]);
@@ -496,9 +502,9 @@ namespace apiPlenitude.Controllers
                     cmd.Parameters.Add("@ListaVends", SqlDbType.VarChar).Value = pedido.vendedor == null ? 0 : pedido.vendedor.IdVendedor;
                     cmd.Parameters.Add("@VlFrete", SqlDbType.Decimal).Value = pedido.VlFrete;
                     cmd.Parameters.Add("@Desconto", SqlDbType.Decimal).Value = pedido.Desconto;
-                    cmd.Parameters.Add("@ObsMidia", SqlDbType.VarChar).Value = pedido.ObsMidia ;
-                    cmd.Parameters.Add("@Observ", SqlDbType.VarChar).Value = pedido.Observ;
-                    cmd.Parameters.Add("@Obs_Fin", SqlDbType.VarChar).Value = pedido.Obs_Fin;
+                    cmd.Parameters.Add("@ObsMidia", SqlDbType.VarChar).Value = pedido.ObsMidia == null ? "" : pedido.ObsMidia;
+                    cmd.Parameters.Add("@Observ", SqlDbType.VarChar).Value = pedido.Observ == null ? "" : pedido.Observ;
+                    cmd.Parameters.Add("@Obs_Fin", SqlDbType.VarChar).Value = pedido.Obs_Fin == null ? "" : pedido.Obs_Fin;
                     cmd.Parameters.Add("@LogradouroEnt", SqlDbType.VarChar).Value = null; //pedido.endereco.Logradouro;
                     cmd.Parameters.Add("@NumeroEnt", SqlDbType.VarChar).Value = null; //pedido.endereco.Numero;
                     cmd.Parameters.Add("@ComplementoEnt", SqlDbType.VarChar).Value = null; //pedido.endereco.Complemento;
@@ -555,6 +561,142 @@ namespace apiPlenitude.Controllers
                         {
                             tran.Rollback();
                             retped.Id_Ped = cmd.Parameters["@Id_Ped"].Value.ToString();
+                            retped.Ok = cmd.Parameters["@Ok"].Value.ToString();
+                            retped.MensErro = cmd.Parameters["@MensErro"].Value.ToString();
+                        }
+                        return retped;
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException(cmd.Parameters["@MensErro"].Value.ToString());
+                    }
+
+                }
+            }
+        }
+
+        [HttpPut("AlterarItemPedido")]
+        [EnableCors(origins: "http://localhost:4200", headers: "*", methods: "*")]
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        public RetornoPedido AlterarItemPedido(ItensPedido itemPedido)
+        {
+            RetornoPedido retped = new RetornoPedido();
+            SqlTransaction tran = null;
+            using (SqlConnection con = new SqlConnection(Configuration.GetConnectionString("ConnectioString")))
+            {
+                con.Open();
+                tran = con.BeginTransaction();
+                using (SqlCommand cmd = new SqlCommand("Sp_PedidoItemAltera", con, tran))
+                {
+
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    //.output('Id_Ped', sql.Int)
+                    cmd.Parameters.Add("@Id_Ipv", SqlDbType.Int).Value = itemPedido.Id_IPv;
+                    cmd.Parameters.Add("@Tp_Frete", SqlDbType.NVarChar).Value = itemPedido.TipoFrete;
+                    //cmd.Parameters.Add("@Descontos", SqlDbType.Int).Value = itemPedido.Quantid;
+                    cmd.Parameters.Add("@Valuni", SqlDbType.Decimal).Value = itemPedido.Valuni;
+
+                    SqlParameter Id_OkOut = new SqlParameter();
+                    Id_OkOut.ParameterName = "@Ok";
+                    Id_OkOut.SqlDbType = System.Data.SqlDbType.VarChar;
+                    Id_OkOut.Size = 30;
+                    Id_OkOut.Direction = System.Data.ParameterDirection.Output;
+                    cmd.Parameters.Add(Id_OkOut);
+
+                    SqlParameter MensErroOut = new SqlParameter();
+                    MensErroOut.ParameterName = "@MensErro";
+                    MensErroOut.SqlDbType = System.Data.SqlDbType.VarChar;
+                    MensErroOut.Size = 500;
+                    MensErroOut.Direction = System.Data.ParameterDirection.Output;
+                    cmd.Parameters.Add(MensErroOut);
+
+                    try
+                    {
+                        cmd.ExecuteNonQuery();
+                        if (cmd.Parameters["@Ok"].Value.ToString() == "1")
+                        {
+                            tran.Commit();
+                            con.Close();
+                            retped.Id_Ped = "";
+                            retped.Ok = cmd.Parameters["@Ok"].Value.ToString();
+                            retped.MensErro = cmd.Parameters["@MensErro"].Value.ToString();
+                        }
+                        else
+                        {
+                            tran.Rollback();
+                            retped.Id_Ped = "";
+                            retped.Ok = cmd.Parameters["@Ok"].Value.ToString();
+                            retped.MensErro = cmd.Parameters["@MensErro"].Value.ToString();
+                        }
+                        return retped;
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException(cmd.Parameters["@MensErro"].Value.ToString());
+                    }
+
+                }
+            }
+        }
+
+
+        [HttpPut("AlterarItemPagto")]
+        [EnableCors(origins: "http://localhost:4200", headers: "*", methods: "*")]
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        public RetornoPedido AlterarItemPagto(ItemPagamento itemPagto)
+        {
+            RetornoPedido retped = new RetornoPedido();
+            SqlTransaction tran = null;
+            using (SqlConnection con = new SqlConnection(Configuration.GetConnectionString("ConnectioString")))
+            {
+                con.Open();
+                tran = con.BeginTransaction();
+                using (SqlCommand cmd = new SqlCommand("Sp_PedidoItemPagGrava", con, tran))
+                {
+
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    //.output('Id_Ped', sql.Int)
+                    cmd.Parameters.Add("@Id_Item", SqlDbType.Int).Value = itemPagto.Id_Item;
+                    cmd.Parameters.Add("@Banco", SqlDbType.NVarChar).Value = itemPagto.Banco;
+                    cmd.Parameters.Add("@Agencia", SqlDbType.NVarChar).Value = itemPagto.Agencia;
+                    cmd.Parameters.Add("@Praca", SqlDbType.NVarChar).Value = itemPagto.Praca;
+                    cmd.Parameters.Add("@Num_Cheq", SqlDbType.NVarChar).Value = itemPagto.Num_Cheq;
+                    cmd.Parameters.Add("@Valor", SqlDbType.Decimal).Value = itemPagto.Valor;
+                    cmd.Parameters.Add("@Dt_Venc", SqlDbType.DateTime).Value = itemPagto.Dt_Venc;
+                    cmd.Parameters.Add("@RenumCheques", SqlDbType.Bit).Value = 1; // itemPagto.TipoFrete;
+                    cmd.Parameters.Add("@ReVencCheques", SqlDbType.Bit).Value = 1; // itemPagto.TipoFrete;
+
+                    SqlParameter Id_OkOut = new SqlParameter();
+                    Id_OkOut.ParameterName = "@Ok";
+                    Id_OkOut.SqlDbType = System.Data.SqlDbType.VarChar;
+                    Id_OkOut.Size = 30;
+                    Id_OkOut.Direction = System.Data.ParameterDirection.Output;
+                    cmd.Parameters.Add(Id_OkOut);
+
+                    SqlParameter MensErroOut = new SqlParameter();
+                    MensErroOut.ParameterName = "@MensErro";
+                    MensErroOut.SqlDbType = System.Data.SqlDbType.VarChar;
+                    MensErroOut.Size = 500;
+                    MensErroOut.Direction = System.Data.ParameterDirection.Output;
+                    cmd.Parameters.Add(MensErroOut);
+
+                    try
+                    {
+                        cmd.ExecuteNonQuery();
+                        if (cmd.Parameters["@Ok"].Value.ToString() == "1")
+                        {
+                            tran.Commit();
+                            con.Close();
+                            retped.Id_Ped = "";
+                            retped.Ok = cmd.Parameters["@Ok"].Value.ToString();
+                            retped.MensErro = cmd.Parameters["@MensErro"].Value.ToString();
+                        }
+                        else
+                        {
+                            tran.Rollback();
+                            retped.Id_Ped = "";
                             retped.Ok = cmd.Parameters["@Ok"].Value.ToString();
                             retped.MensErro = cmd.Parameters["@MensErro"].Value.ToString();
                         }
@@ -779,6 +921,10 @@ namespace apiPlenitude.Controllers
                     //Add the output parameter to the command object
                     SqlParameter @Id_FrpOut = new SqlParameter();
                     @Id_FrpOut.ParameterName = "@Id_Frp";
+                    //@Id_FrpOut.Value = formPagto.Id_Frp;
+
+
+
                     @Id_FrpOut.SqlDbType = System.Data.SqlDbType.Int;
                     @Id_FrpOut.Size = 30;
                     @Id_FrpOut.Value = null; // formPagto.Id_Frp;
@@ -1057,7 +1203,7 @@ namespace apiPlenitude.Controllers
                             {
                                 cmd1.ExecuteNonQuery();
                             }
-                            catch (Exception)
+                            catch (Exception ex)
                             {
                                 tran.Rollback();
                                 throw new InvalidOperationException("Erro ao excluir forma de pagamento");
@@ -1077,30 +1223,35 @@ namespace apiPlenitude.Controllers
         }
 
 
-        [HttpPut("AlterarPedido")]
+        [HttpPost("EncerraPedido")]
         [EnableCors(origins: "http://localhost:4200", headers: "*", methods: "*")]
         [Authorize(AuthenticationSchemes = "Bearer")]
         public RetornoPedido EncerraPedido(Pedido pedido)
         {
             RetornoPedido retped = new RetornoPedido();
-            SqlTransaction tran = null;
+            retped = AlterarPedido(pedido);
+
+
+            //SqlTransaction tran = null;
             using (SqlConnection con = new SqlConnection(Configuration.GetConnectionString("ConnectioString")))
             {
                 con.Open();
-                tran = con.BeginTransaction();
-                using (SqlCommand cmd = new SqlCommand("Sp_PedidoEncerra", con, tran))
+                //tran = con.BeginTransaction();
+                //using (SqlCommand cmd = new SqlCommand("Sp_PedidoEncerra", con, tran))
+                using (SqlCommand cmd = new SqlCommand("Sp_PedidoEncerra", con))
                 {
 
                     cmd.CommandType = CommandType.StoredProcedure;
 
                     //.output('Id_Ped', sql.Int)
-                    cmd.Parameters.Add("@Id_Ped", SqlDbType.Int).Value = pedido.Id_Cli;
+                    cmd.Parameters.Add("@Id_Ped", SqlDbType.Int).Value = pedido.Id_Ped;
 
                     SqlParameter mensagemOut = new SqlParameter();
                     mensagemOut.ParameterName = "@Mensagem";
                     mensagemOut.SqlDbType = System.Data.SqlDbType.VarChar;
                     mensagemOut.Size = 1000;
-                    mensagemOut.Direction = System.Data.ParameterDirection.Output;
+                    mensagemOut.Direction = System.Data.ParameterDirection.InputOutput;
+                    mensagemOut.Value = "";
                     cmd.Parameters.Add(mensagemOut);
 
                     SqlParameter Id_OkOut = new SqlParameter();
@@ -1114,7 +1265,8 @@ namespace apiPlenitude.Controllers
                     MensErroOut.ParameterName = "@MensErro";
                     MensErroOut.SqlDbType = System.Data.SqlDbType.VarChar;
                     MensErroOut.Size = 500;
-                    MensErroOut.Direction = System.Data.ParameterDirection.Output;
+                    MensErroOut.Direction = System.Data.ParameterDirection.InputOutput;
+                    MensErroOut.Value = "";
                     cmd.Parameters.Add(MensErroOut);
 
 
@@ -1124,7 +1276,7 @@ namespace apiPlenitude.Controllers
                         cmd.ExecuteNonQuery();
                         if (cmd.Parameters["@Ok"].Value.ToString() == "1")
                         {
-                            tran.Commit();
+                            //tran.Commit();
                             con.Close();
                             retped.Id_Ped = cmd.Parameters["@Id_Ped"].Value.ToString();
                             retped.Ok = cmd.Parameters["@Ok"].Value.ToString();
@@ -1132,10 +1284,71 @@ namespace apiPlenitude.Controllers
                         }
                         else
                         {
-                            tran.Rollback();
+                            //tran.Rollback();
                             retped.Id_Ped = cmd.Parameters["@Id_Ped"].Value.ToString();
                             retped.Ok = cmd.Parameters["@Ok"].Value.ToString();
-                            retped.MensErro = cmd.Parameters["@MensErro"].Value.ToString();
+                            retped.MensErro = cmd.Parameters["@Mensagem"].Value.ToString();
+                        }
+                        return retped;
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException(cmd.Parameters["@MensErro"].Value.ToString());
+                    }
+
+                }
+            }
+        }
+
+
+        [HttpGet("PedidoRecalcula")]
+        [EnableCors(origins: "http://localhost:4200", headers: "*", methods: "*")]
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        public RetornoCalculaPedido PedidoRecalcula([FromQuery] int idPedido)
+        {
+            RetornoCalculaPedido retped = new RetornoCalculaPedido();
+            SqlTransaction tran = null;
+            using (SqlConnection con = new SqlConnection(Configuration.GetConnectionString("ConnectioString")))
+            {
+                con.Open();
+                tran = con.BeginTransaction();
+                using (SqlCommand cmd = new SqlCommand("Sp_PedidoRecalcula", con, tran))
+                {
+
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    //.output('Id_Ped', sql.Int)
+                    cmd.Parameters.Add("@Id_Ped", SqlDbType.Int).Value = idPedido;
+
+                    SqlParameter entregaOut = new SqlParameter();
+                    entregaOut.ParameterName = "@Entrega";
+                    entregaOut.SqlDbType = System.Data.SqlDbType.DateTime;
+                    entregaOut.Direction = System.Data.ParameterDirection.Output;
+                    cmd.Parameters.Add(entregaOut);
+
+                    SqlParameter saldoOut = new SqlParameter();
+                    saldoOut.ParameterName = "@Saldo";
+                    saldoOut.SqlDbType = System.Data.SqlDbType.Decimal;
+                    saldoOut.Direction = System.Data.ParameterDirection.Output;
+                    cmd.Parameters.Add(saldoOut);
+
+                    try
+                    {
+                        cmd.ExecuteNonQuery();
+                        if (cmd.Parameters["@Entrega"].Value.ToString() != null && cmd.Parameters["@Entrega"].Value.ToString() != "")
+                        {
+                            tran.Commit();
+                            con.Close();
+                            retped.id_Ped = cmd.Parameters["@Id_Ped"].Value.ToString();
+                            retped.entrega = Convert.ToDateTime(cmd.Parameters["@Entrega"].Value);
+                            retped.saldo = Convert.ToDecimal(cmd.Parameters["@Saldo"].Value);
+                        }
+                        else
+                        {
+                            tran.Rollback();
+                            //retped.id_Ped = cmd.Parameters["@Id_Ped"].Value.ToString();
+                            //retped.entrega = Convert.ToDateTime(cmd.Parameters["@Entrega"].Value);
+                            //retped.saldo = Convert.ToDecimal(cmd.Parameters["@Saldo"].Value);
                         }
                         return retped;
                     }

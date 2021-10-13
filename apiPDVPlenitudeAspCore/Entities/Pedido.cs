@@ -46,7 +46,7 @@ namespace apiPlenitude.Entities
 
         public int TotProd { get; set; }
         public decimal Desconto { get; set; }
-        public int Desc_Por { get; set; }
+        public decimal Desc_Por { get; set; }
         public decimal TotPed { get; set; }
         public decimal VlFrete { get; set; }
         public decimal Val_Afin { get; set; }

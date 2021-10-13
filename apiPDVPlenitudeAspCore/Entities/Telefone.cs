@@ -8,11 +8,13 @@ namespace apiPlenitude.Entities
     public class Telefone
     {
         public int IdTelefone { get; set; }
-        public string CodDdi { get; set; }
-        public string CodDdd { get; set; }
-        public string Numero { get; set; }
-        public string Ramal { get; set; }
-        public string IndTipoFone { get; set; }
+        public string codddi { get; set; }
+        public string codddd { get; set; }
+        public string numero { get; set; }
+        public string ramal { get; set; }
+        public string indusofone { get; set; }
+        public string descTipoFone { get; set; }
+        public int ordenador { get; set; }
 
     }
 }
